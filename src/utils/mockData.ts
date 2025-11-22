@@ -61,6 +61,126 @@ export const mockBuildings: Building[] = [
       longitude: -82.4131,
     },
   },
+  {
+    id: '7',
+    name: 'Behavioral Sciences Building',
+    abbreviation: 'BEH',
+    aliases: ['beh', 'behavioral', 'behavioral sciences', 'psychology'],
+    coordinates: {
+      latitude: 28.0589,
+      longitude: -82.4152,
+    },
+  },
+  {
+    id: '8',
+    name: 'Education Building',
+    abbreviation: 'EDU',
+    aliases: ['edu', 'education', 'college of education'],
+    coordinates: {
+      latitude: 28.0578,
+      longitude: -82.4168,
+    },
+  },
+  {
+    id: '9',
+    name: 'Cooper Hall',
+    abbreviation: 'CPR',
+    aliases: ['cpr', 'cooper', 'cooper hall'],
+    coordinates: {
+      latitude: 28.0592,
+      longitude: -82.4175,
+    },
+  },
+  {
+    id: '10',
+    name: 'Natural & Environmental Sciences',
+    abbreviation: 'NES',
+    aliases: ['nes', 'environmental', 'natural sciences'],
+    coordinates: {
+      latitude: 28.0604,
+      longitude: -82.4128,
+    },
+  },
+  {
+    id: '11',
+    name: 'Psychology Building',
+    abbreviation: 'PCD',
+    aliases: ['pcd', 'psychology', 'psych'],
+    coordinates: {
+      latitude: 28.0585,
+      longitude: -82.4155,
+    },
+  },
+  {
+    id: '12',
+    name: 'Student Services Building',
+    abbreviation: 'SVC',
+    aliases: ['svc', 'student services', 'services'],
+    coordinates: {
+      latitude: 28.0595,
+      longitude: -82.4192,
+    },
+  },
+  {
+    id: '13',
+    name: 'Chemistry Building',
+    abbreviation: 'CHE',
+    aliases: ['che', 'chemistry', 'chem'],
+    coordinates: {
+      latitude: 28.0598,
+      longitude: -82.4135,
+    },
+  },
+  {
+    id: '14',
+    name: 'Physics Building',
+    abbreviation: 'PHY',
+    aliases: ['phy', 'physics'],
+    coordinates: {
+      latitude: 28.0602,
+      longitude: -82.4142,
+    },
+  },
+  {
+    id: '15',
+    name: 'Fine Arts Building',
+    abbreviation: 'FAH',
+    aliases: ['fah', 'fine arts', 'arts'],
+    coordinates: {
+      latitude: 28.0612,
+      longitude: -82.4158,
+    },
+  },
+  {
+    id: '16',
+    name: 'Theatre Building',
+    abbreviation: 'TAR',
+    aliases: ['tar', 'theatre', 'theater'],
+    coordinates: {
+      latitude: 28.0615,
+      longitude: -82.4165,
+    },
+  },
+  {
+    id: '17',
+    name: 'Music Building',
+    abbreviation: 'MUS',
+    aliases: ['mus', 'music'],
+    coordinates: {
+      latitude: 28.0618,
+      longitude: -82.4172,
+    },
+  },
+  {
+    id: '18',
+    name: 'Communication Building',
+    abbreviation: 'CMC',
+    aliases: ['cmc', 'communication', 'comm'],
+    coordinates: {
+      latitude: 28.0608,
+      longitude: -82.4182,
+    },
+  },
 ];
 
 export const mockLots: Lot[] = [

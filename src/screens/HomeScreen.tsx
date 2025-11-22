@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StatusBar, TextInput, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StatusBar, TextInput, StyleSheet, Dimensions, Image, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -35,6 +35,36 @@ export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const [searchQuery, setSearchQuery] = useState('');
   const [isParked, setIsParked] = useState(true);
+  const [isCheckedOut, setIsCheckedOut] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredBuildings, setFilteredBuildings] = useState<typeof mockBuildings>([]);
+
+  const handleSearchChange = (text: string) => {
+    setSearchQuery(text);
+    
+    if (text.trim()) {
+      const filtered = mockBuildings.filter(
+        (building) =>
+          building.name.toLowerCase().includes(text.toLowerCase()) ||
+          building.abbreviation.toLowerCase().includes(text.toLowerCase()) ||
+          building.aliases.some((alias) =>
+            alias.toLowerCase().includes(text.toLowerCase())
+          )
+      ).slice(0, 5); // Limit to 5 suggestions
+      
+      setFilteredBuildings(filtered);
+      setShowSuggestions(filtered.length > 0);
+    } else {
+      setFilteredBuildings([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSuggestionPress = (building: typeof mockBuildings[0]) => {
+    setSearchQuery('');
+    setShowSuggestions(false);
+    navigation.navigate('Results', { buildingName: building.name });
+  };
 
   const handleSearch = () => {
     if (!searchQuery.trim()) {
@@ -51,15 +81,40 @@ export default function HomeScreen() {
     );
 
     if (foundBuilding) {
-      navigation.navigate('Results', {
-        buildingName: foundBuilding.name,
-      });
+      navigation.navigate('Results', { buildingName: foundBuilding.name });
+    } else {
+      // Navigate to results anyway with the search query
+      navigation.navigate('Results', { buildingName: searchQuery });
     }
+
+    setSearchQuery('');
+    setShowSuggestions(false);
   };
 
   const handleQuickAccess = (destination?: string) => {
     if (!destination) return;
     navigation.navigate('Results', { buildingName: destination });
+  };
+
+  const openNativeMaps = () => {
+    // Coordinates for Crescent Hill Garage
+    const latitude = 28.0583;
+    const longitude = -82.4139;
+    const label = 'Crescent Hill Garage';
+    
+    const scheme = Platform.select({
+      ios: 'maps://0,0?q=',
+      android: 'geo:0,0?q='
+    });
+    const latLng = `${latitude},${longitude}`;
+    const url = Platform.select({
+      ios: `${scheme}${label}@${latLng}`,
+      android: `${scheme}${latLng}(${label})`
+    });
+
+    if (url) {
+      Linking.openURL(url);
+    }
   };
 
   return (
@@ -72,6 +127,9 @@ export default function HomeScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
+          <View style={styles.logoContainer}>
+            <Ionicons name="car-sport" size={48} color={COLORS.primary} />
+          </View>
           <Text style={styles.title}>Parkabull</Text>
           <Text style={styles.subtitle}>Find your perfect spot</Text>
         </View>
@@ -85,16 +143,42 @@ export default function HomeScreen() {
               placeholder='Search for a building...'
               placeholderTextColor={COLORS.textSecondary}
               value={searchQuery}
-              onChangeText={setSearchQuery}
+              onChangeText={handleSearchChange}
               onSubmitEditing={handleSearch}
+              onFocus={() => searchQuery.trim() && setShowSuggestions(filteredBuildings.length > 0)}
               returnKeyType='search'
             />
             {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <TouchableOpacity onPress={() => {
+                setSearchQuery('');
+                setShowSuggestions(false);
+              }}>
                 <Ionicons name='close-circle' size={20} color={COLORS.textSecondary} />
               </TouchableOpacity>
             )}
           </View>
+
+          {/* Autocomplete Dropdown */}
+          {showSuggestions && filteredBuildings.length > 0 && (
+            <View style={styles.suggestionsContainer}>
+              {filteredBuildings.map((building) => (
+                <TouchableOpacity
+                  key={building.id}
+                  style={styles.suggestionItem}
+                  onPress={() => handleSuggestionPress(building)}
+                  activeOpacity={OPACITY.pressed}
+                >
+                  <Ionicons name='location' size={18} color={COLORS.primary} />
+                  <View style={styles.suggestionText}>
+                    <Text style={styles.suggestionCode}>{building.abbreviation}</Text>
+                    <Text style={styles.suggestionDivider}> - </Text>
+                    <Text style={styles.suggestionName}>{building.name}</Text>
+                  </View>
+                  <Ionicons name='chevron-forward' size={18} color={COLORS.textTertiary} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* Currently Parked Card */}
@@ -102,10 +186,23 @@ export default function HomeScreen() {
           <View style={styles.section}>
             <Card variant="elevated" padding="lg">
               <View style={styles.parkedHeader}>
-                <Text style={styles.parkedTitle}>Currently Parked</Text>
-                <View style={styles.statusBadge}>
-                  <View style={styles.statusDot} />
-                  <Text style={styles.statusText}>Active</Text>
+                <Text style={styles.parkedTitle}>
+                  {isCheckedOut ? 'Recently Parked' : 'Currently Parked'}
+                </Text>
+                <View style={[
+                  styles.statusBadge,
+                  isCheckedOut && styles.statusBadgeInactive
+                ]}>
+                  <View style={[
+                    styles.statusDot,
+                    isCheckedOut && styles.statusDotInactive
+                  ]} />
+                  <Text style={[
+                    styles.statusText,
+                    isCheckedOut && styles.statusTextInactive
+                  ]}>
+                    {isCheckedOut ? 'Checked Out' : 'Active'}
+                  </Text>
                 </View>
               </View>
 
@@ -115,7 +212,11 @@ export default function HomeScreen() {
                 </View>
                 <View style={styles.parkedDetails}>
                   <Text style={styles.parkingName}>Crescent Hill Garage</Text>
-                  <Text style={styles.parkingTime}>Since 9:30 AM • Floor 2, Spot A4</Text>
+                  <Text style={styles.parkingTime}>
+                    {isCheckedOut 
+                      ? 'Checked out at 2:30 PM' 
+                      : 'Since 9:30 AM • Floor 2, Spot A4'}
+                  </Text>
                 </View>
               </View>
 
@@ -123,21 +224,25 @@ export default function HomeScreen() {
                 <TouchableOpacity
                   style={styles.actionButton}
                   activeOpacity={OPACITY.pressed}
-                  onPress={() => navigation.navigate('Map')}
+                  onPress={openNativeMaps}
                 >
                   <Ionicons name='navigate' size={18} color={COLORS.textPrimary} />
                   <Text style={styles.actionButtonText}>Directions</Text>
                 </TouchableOpacity>
 
-                <View style={styles.divider} />
-
                 <TouchableOpacity
-                  style={[styles.actionButton, styles.checkoutButton]}
+                  style={[styles.actionButton, styles.actionButtonPrimary]}
                   activeOpacity={OPACITY.pressed}
-                  onPress={() => setIsParked(false)}
+                  onPress={() => setIsCheckedOut(!isCheckedOut)}
                 >
-                  <Ionicons name='checkmark-circle' size={18} color={COLORS.primary} />
-                  <Text style={[styles.actionButtonText, styles.checkoutText]}>Check Out</Text>
+                  <Ionicons 
+                    name={isCheckedOut ? 'car' : 'log-out'} 
+                    size={18} 
+                    color='#000' 
+                  />
+                  <Text style={styles.actionButtonTextPrimary}>
+                    {isCheckedOut ? 'Park Again' : 'Check Out'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </Card>
@@ -195,6 +300,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.xl,
     paddingBottom: SPACING.lg,
+    alignItems: 'center',
+  },
+  logoContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: `${COLORS.primary}15`,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
   },
   title: {
     fontSize: TYPOGRAPHY.fontSize.display,
@@ -369,5 +484,64 @@ const styles = StyleSheet.create({
     fontWeight: TYPOGRAPHY.fontWeight.semibold,
     color: COLORS.primary,
   },
+  // Autocomplete Dropdown Styles
+  suggestionsContainer: {
+    position: 'absolute',
+    top: 52,
+    left: 0,
+    right: 0,
+    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS.md,
+    marginTop: SPACING.xs,
+    ...SHADOWS.large,
+    maxHeight: 250,
+    zIndex: 1000,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.base,
+    gap: SPACING.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
+  },
+  suggestionText: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  suggestionCode: {
+    fontSize: TYPOGRAPHY.fontSize.base,
+    fontWeight: TYPOGRAPHY.fontWeight.bold,
+    color: COLORS.primary,
+  },
+  suggestionDivider: {
+    fontSize: TYPOGRAPHY.fontSize.base,
+    color: COLORS.textTertiary,
+  },
+  suggestionName: {
+    fontSize: TYPOGRAPHY.fontSize.base,
+    color: COLORS.textPrimary,
+    flex: 1,
+  },
+  // Inactive Status Styles
+  statusBadgeInactive: {
+    backgroundColor: `${COLORS.textTertiary}15`,
+  },
+  statusDotInactive: {
+    backgroundColor: COLORS.textTertiary,
+  },
+  statusTextInactive: {
+    color: COLORS.textTertiary,
+  },
+  // Primary Action Button
+  actionButtonPrimary: {
+    backgroundColor: COLORS.primary,
+  },
+  actionButtonTextPrimary: {
+    fontSize: TYPOGRAPHY.fontSize.base,
+    fontWeight: TYPOGRAPHY.fontWeight.semibold,
+    color: '#000',
+  },
 });
-

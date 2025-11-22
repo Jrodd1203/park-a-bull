@@ -1,11 +1,12 @@
 import React from 'react';
 import { useColorScheme } from 'react-native';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createSharedElementStackNavigator } from 'react-navigation-shared-element';
 import HomeScreen from '../screens/HomeScreen';
 import ResultsScreen from '../screens/ResultsScreen';
 import MapScreen from '../screens/MapScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import CheckInScreen from '../screens/CheckInScreen';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -14,12 +15,19 @@ export type RootStackParamList = {
     permitType?: string;
   };
   Map: {
-    lotId?: string;
+    latitude?: number;
+    longitude?: number;
+  };
+  CheckIn: {
+    parkingId: string;
+    parkingName: string;
+    parkingType: 'garage' | 'lot';
+    floors?: number;
   };
   Profile: undefined;
 };
 
-const Stack = createStackNavigator<RootStackParamList>();
+const Stack = createSharedElementStackNavigator<RootStackParamList>();
 
 const CustomLightTheme = {
   ...DefaultTheme,
@@ -54,6 +62,7 @@ export default function AppNavigator() {
       <Stack.Navigator
         initialRouteName="Home"
         screenOptions={{
+          headerShown: false,
           headerStyle: {
             borderBottomWidth: 1,
             borderBottomColor: theme.colors.border,
@@ -80,6 +89,11 @@ export default function AppNavigator() {
           name="Map"
           component={MapScreen}
           options={{ title: 'Lot Map' }}
+        />
+        <Stack.Screen
+          name="CheckIn"
+          component={CheckInScreen}
+          options={{ title: 'Check In' }}
         />
         <Stack.Screen
           name="Profile"
