@@ -7,6 +7,7 @@ import ResultsScreen from '../screens/ResultsScreen';
 import MapScreen from '../screens/MapScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import CheckInScreen from '../screens/CheckInScreen';
+import DevTestScreen from '../screens/DevTestScreen';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -25,6 +26,7 @@ export type RootStackParamList = {
     floors?: number;
   };
   Profile: undefined;
+  DevTest: undefined;
 };
 
 const Stack = createSharedElementStackNavigator<RootStackParamList>();
@@ -99,6 +101,11 @@ export default function AppNavigator() {
           name="Profile"
           component={ProfileScreen}
           options={{ title: 'My Profile' }}
+        />
+        <Stack.Screen
+          name="DevTest"
+          component={DevTestScreen}
+          options={{ title: 'Developer Tests', headerShown: true }}
         />
       </Stack.Navigator>
     </NavigationContainer>

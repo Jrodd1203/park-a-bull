@@ -1,13 +1,12 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { USF_PARKING_LOTS } from '../../../constants/parkingLocations';
 import { COLORS } from '../../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
-import { DARK_MAP_STYLE } from '../../utils/mapStyles';
 
 type MapWidgetNavigationProp = StackNavigationProp<RootStackParamList, 'Map'>;
 
@@ -18,8 +17,10 @@ const MapWidget = () => {
     <TouchableOpacity onPress={() => navigation.navigate('Map', {})}>
       <View style={styles.container}>
         <MapView
-          provider={PROVIDER_GOOGLE}
+          key="usf-campus-map"
+          provider={PROVIDER_DEFAULT}
           style={styles.map}
+          userInterfaceStyle="dark"
           initialRegion={{
             latitude: 28.0587,
             longitude: -82.4139,
@@ -30,7 +31,6 @@ const MapWidget = () => {
           zoomEnabled={false}
           pitchEnabled={false}
           rotateEnabled={false}
-          customMapStyle={DARK_MAP_STYLE}
         >
           {USF_PARKING_LOTS.map((parking) => (
             <Marker key={parking.id} coordinate={parking.coordinates}>

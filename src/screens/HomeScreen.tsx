@@ -280,6 +280,18 @@ export default function HomeScreen() {
             <Ionicons name='chevron-forward' size={20} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
+
+        {/* DEV TEST BUTTON - Remove before production! */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.devTestButton}
+            activeOpacity={OPACITY.pressed}
+            onPress={() => navigation.navigate('DevTest')}
+          >
+            <Ionicons name='flask' size={20} color='#FFFFFF' />
+            <Text style={styles.devTestButtonText}>Developer Tests</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

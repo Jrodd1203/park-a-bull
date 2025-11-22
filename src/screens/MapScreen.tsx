@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Dimensions, Linkin
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { RootStackParamList } from '../navigation/AppNavigator';
@@ -12,7 +12,6 @@ import { Button } from '../components/ui/Button';
 import { USF_PARKING_LOTS, ParkingLocation } from '../../constants/parkingLocations';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS, SHADOWS, OPACITY } from '../../constants/theme';
 import { SharedElement } from 'react-navigation-shared-element';
-import { DARK_MAP_STYLE } from '../utils/mapStyles';
 
 type MapScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Map'>;
 type MapScreenRouteProp = RouteProp<RootStackParamList, 'Map'>;
@@ -203,7 +202,8 @@ export default function MapScreen() {
         <MapView
           ref={mapRef}
           style={styles.map}
-          provider={PROVIDER_GOOGLE}
+          provider={PROVIDER_DEFAULT}
+          userInterfaceStyle="dark"
           initialRegion={{
             latitude: 28.0587,
             longitude: -82.4139,
@@ -212,7 +212,6 @@ export default function MapScreen() {
           }}
           showsUserLocation
           showsMyLocationButton={false}
-          customMapStyle={DARK_MAP_STYLE}
         >
           {USF_PARKING_LOTS.map((parking) => (
             <Marker
