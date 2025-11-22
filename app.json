@@ -13,7 +13,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jrodd.parkabull"
     },
     "android": {
       "adaptiveIcon": {
@@ -31,6 +32,16 @@
         "projectId": "7b291162-4f16-4de9-acf6-c42f8c779a01"
       }
     },
-    "owner": "jrodd"
+    "owner": "jrodd",
+    "plugins": [
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "react-native",
+          "organization": "jaden-b1"
+        }
+      ]
+    ]
   }
 }

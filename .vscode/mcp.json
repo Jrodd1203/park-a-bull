@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "Sentry": {
+      "url": "https://mcp.sentry.dev/mcp/jaden-b1/react-native",
+      "type": "http"
+    }
+  }
+}
