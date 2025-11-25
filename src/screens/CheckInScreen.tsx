@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, StatusBar, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -8,6 +8,9 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS, SHADOWS, OPACITY } from '../../constants/theme';
+import { useAuth } from '../hooks/useAuth';
+import { createCheckin, getWeeklyCheckinCount } from '../services/checkinService';
+import { signInAnonymously } from '../services/authService';
 
 type CheckInScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CheckIn'>;
 type CheckInScreenRouteProp = RouteProp<RootStackParamList, 'CheckIn'>;
@@ -17,20 +20,107 @@ export default function CheckInScreen() {
   const route = useRoute<CheckInScreenRouteProp>();
   const { parkingId, parkingName, parkingType, floors } = route.params;
 
+  const { user, profile } = useAuth();
   const [selectedFloor, setSelectedFloor] = useState<number>(1);
   const [spotNumber, setSpotNumber] = useState<string>('');
+  const [weeklyCheckIns, setWeeklyCheckIns] = useState(0);
+  const [loading, setLoading] = useState(false);
 
-  // Mock data - in real app, this would come from backend
-  const weeklyCheckIns = 5;
-  const currentTime = new Date().toLocaleTimeString('en-US', { 
-    hour: 'numeric', 
+  const currentTime = new Date().toLocaleTimeString('en-US', {
+    hour: 'numeric',
     minute: '2-digit',
-    hour12: true 
+    hour12: true
   });
 
-  const handleConfirm = () => {
-    // In a real app, this would save to backend
-    navigation.navigate('Home');
+  // Load weekly check-in count
+  useEffect(() => {
+    async function loadWeeklyCount() {
+      if (user) {
+        try {
+          const count = await getWeeklyCheckinCount(user.id);
+          setWeeklyCheckIns(count);
+        } catch (error) {
+          console.error('Error loading weekly count:', error);
+        }
+      }
+    }
+    loadWeeklyCount();
+  }, [user]);
+
+  const handleConfirm = async () => {
+    setLoading(true);
+
+    try {
+      console.log('=== CHECK-IN DEBUG START ===');
+      console.log('Initial user:', user?.id);
+      console.log('Initial profile:', profile);
+
+      // Ensure user is signed in (anonymous if needed)
+      let currentUser = user;
+      if (!currentUser) {
+        console.log('No user found, signing in anonymously...');
+        const { user: newUser, error } = await signInAnonymously();
+        console.log('Anonymous sign-in result:', { userId: newUser?.id, error });
+
+        if (error || !newUser) {
+          console.error('Anonymous sign-in failed:', error);
+          Alert.alert('Error', `Failed to sign in: ${error?.message || 'Unknown error'}`);
+          setLoading(false);
+          return;
+        }
+        currentUser = newUser;
+        console.log('Successfully signed in anonymously:', currentUser.id);
+      }
+
+      // Get permit type from profile or default to S (Commuter)
+      const permitType = profile?.permit_type || 'S';
+      console.log('Using permit type:', permitType);
+
+      // Log check-in parameters
+      console.log('Check-in parameters:', {
+        userId: currentUser.id,
+        parkingId,
+        parkingName,
+        permitType,
+        floor: parkingType === 'garage' ? selectedFloor : undefined,
+        spotNumber: spotNumber || undefined,
+      });
+
+      // Create the check-in in Supabase
+      console.log('Calling createCheckin...');
+      const result = await createCheckin(
+        currentUser.id,
+        parkingId,
+        permitType,
+        parkingType === 'garage' ? selectedFloor : undefined,
+        spotNumber || undefined
+      );
+      console.log('Check-in created successfully:', result);
+
+      // Success! Navigate back to home
+      console.log('=== CHECK-IN DEBUG END (SUCCESS) ===');
+      Alert.alert('Success', 'Checked in successfully!');
+      navigation.navigate('Home');
+    } catch (error: any) {
+      console.error('=== CHECK-IN ERROR ===');
+      console.error('Error object:', error);
+      console.error('Error message:', error.message);
+      console.error('Error code:', error.code);
+      console.error('Error details:', error.details);
+      console.error('Full error:', JSON.stringify(error, null, 2));
+
+      // Show detailed error to user
+      let errorMessage = 'Failed to check in. ';
+      if (error.message) {
+        errorMessage += error.message;
+      } else {
+        errorMessage += 'Please check console for details.';
+      }
+
+      Alert.alert('Check-In Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -172,12 +262,22 @@ export default function CheckInScreen() {
         {/* Confirm Button */}
         <View style={styles.section}>
           <TouchableOpacity
-            style={styles.confirmButton}
+            style={[styles.confirmButton, loading && { opacity: 0.6 }]}
             onPress={handleConfirm}
             activeOpacity={OPACITY.pressed}
+            disabled={loading}
           >
-            <Text style={styles.confirmButtonText}>Confirm Check-In</Text>
-            <Ionicons name='arrow-forward' size={20} color='#000' />
+            {loading ? (
+              <>
+                <ActivityIndicator color="#000" />
+                <Text style={styles.confirmButtonText}>Checking In...</Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.confirmButtonText}>Confirm Check-In</Text>
+                <Ionicons name='arrow-forward' size={20} color='#000' />
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>

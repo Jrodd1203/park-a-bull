@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, StatusBar, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { ParkingCard } from '../components/parking/ParkingCard';
-import { USF_PARKING_LOTS, getParkingLotsByPermit, ParkingLocation } from '../../constants/parkingLocations';
+import { ParkingLocation } from '../../constants/parkingLocations';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS, SHADOWS, OPACITY } from '../../constants/theme';
 import { SharedElement } from 'react-navigation-shared-element';
 import MapWidget from '../components/map/MapWidget';
+import { useParkingLots } from '../hooks/useParkingLots';
 
 type ResultsScreenRouteProp = RouteProp<RootStackParamList, 'Results'>;
 type ResultsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Results'>;
@@ -32,10 +33,48 @@ export default function ResultsScreen() {
 
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
   const [sortBy, setSortBy] = useState<SortType>('distance');
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  const filteredLots = selectedFilter === 'all'
-    ? USF_PARKING_LOTS
-    : getParkingLotsByPermit(selectedFilter);
+  // Use real Supabase data instead of mock data
+  const permitFilter = selectedFilter === 'all' ? undefined : `${selectedFilter} - ${
+    selectedFilter === 'S' ? 'Student' :
+    selectedFilter === 'R' ? 'Resident' :
+    selectedFilter === 'E' ? 'Faculty/Staff' :
+    'Visitor'
+  }`;
+  const { lots: supabaseLots, loading, error } = useParkingLots(permitFilter);
+
+  // Mark initial load as complete once we have data
+  React.useEffect(() => {
+    if (!loading && supabaseLots) {
+      setIsInitialLoad(false);
+    }
+  }, [loading, supabaseLots]);
+
+  // Convert Supabase lots to ParkingLocation format for compatibility
+  const filteredLots: ParkingLocation[] = (supabaseLots || []).map(lot => {
+    // Convert capacity number to object format expected by ParkingCard
+    const capacityObj: Record<string, number> = {};
+    lot.permits.forEach(permit => {
+      const permitKey = permit.split(' - ')[0]; // Extract 'S' from 'S - Student'
+      capacityObj[permitKey] = Math.floor(lot.capacity / lot.permits.length);
+    });
+
+    return {
+      id: lot.id,
+      name: lot.name,
+      shortName: lot.short_name,
+      type: lot.type,
+      permits: lot.permits,
+      capacity: capacityObj,
+      coordinates: {
+        latitude: lot.latitude,
+        longitude: lot.longitude,
+      },
+      features: lot.type === 'garage' ? ['covered', 'security-cameras'] : ['outdoor', 'well-lit'],
+      floors: lot.floors || undefined,
+    };
+  });
 
   const handleParkingPress = (lot: ParkingLocation) => {
     navigation.navigate('Map', {
@@ -52,6 +91,37 @@ export default function ResultsScreen() {
       floors: lot.floors,
     });
   };
+
+  // Show loading state ONLY on initial load
+  if (loading && isInitialLoad) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading parking lots...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle" size={48} color="#EF4444" />
+          <Text style={styles.errorTitle}>Error Loading Data</Text>
+          <Text style={styles.errorMessage}>{error.message}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.retryButtonText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -135,16 +205,24 @@ export default function ResultsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {filteredLots.map((parking, index) => (
-          <ParkingCard
-            key={parking.id}
-            parking={parking}
-            onPress={() => handleParkingPress(parking)}
-            onCheckIn={() => handleCheckIn(parking)}
-            showDistance
-            distance={Math.floor(Math.random() * 15) + 2}
-          />
-        ))}
+        {filteredLots.map((parking, index) => {
+          // Find the corresponding Supabase lot to get real occupancy data
+          const supabaseLot = supabaseLots?.find(lot => lot.id === parking.id);
+
+          return (
+            <ParkingCard
+              key={parking.id}
+              parking={parking}
+              onPress={() => handleParkingPress(parking)}
+              onCheckIn={() => handleCheckIn(parking)}
+              showDistance
+              distance={Math.floor(Math.random() * 15) + 2}
+              realCapacity={supabaseLot?.capacity}
+              realOccupancy={supabaseLot?.current_occupancy}
+              realOccupancyPercentage={supabaseLot?.occupancyPercentage}
+            />
+          );
+        })}
 
         {filteredLots.length === 0 && (
           <View style={styles.emptyState}>
@@ -264,5 +342,46 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.fontSize.base,
     color: COLORS.textSecondary,
     marginTop: SPACING.sm,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.xl,
+  },
+  loadingText: {
+    marginTop: SPACING.base,
+    fontSize: TYPOGRAPHY.fontSize.base,
+    color: COLORS.textSecondary,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.xl,
+  },
+  errorTitle: {
+    fontSize: TYPOGRAPHY.fontSize.xl,
+    fontWeight: TYPOGRAPHY.fontWeight.bold,
+    color: COLORS.textPrimary,
+    marginTop: SPACING.base,
+  },
+  errorMessage: {
+    fontSize: TYPOGRAPHY.fontSize.base,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: SPACING.sm,
+  },
+  retryButton: {
+    marginTop: SPACING.lg,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xl,
+    backgroundColor: COLORS.primary,
+    borderRadius: BORDER_RADIUS.button,
+  },
+  retryButtonText: {
+    fontSize: TYPOGRAPHY.fontSize.base,
+    fontWeight: TYPOGRAPHY.fontWeight.semibold,
+    color: '#000',
   },
 });

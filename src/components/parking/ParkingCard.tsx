@@ -11,13 +11,25 @@ interface ParkingCardProps {
   onCheckIn?: () => void;
   showDistance?: boolean;
   distance?: number;
+  realCapacity?: number;
+  realOccupancy?: number;
+  realOccupancyPercentage?: number;
 }
 
-export function ParkingCard({ parking, onPress, onCheckIn, showDistance, distance }: ParkingCardProps) {
-  // Calculate occupancy percentage (mock for now)
-  const totalCapacity = Object.values(parking.capacity).reduce((a, b) => a + b, 0);
-  const occupied = Math.floor(Math.random() * totalCapacity);
-  const occupancyPercentage = Math.round((occupied / totalCapacity) * 100);
+export function ParkingCard({
+  parking,
+  onPress,
+  onCheckIn,
+  showDistance,
+  distance,
+  realCapacity,
+  realOccupancy,
+  realOccupancyPercentage
+}: ParkingCardProps) {
+  // Use real data if provided, otherwise calculate from capacity object
+  const totalCapacity = realCapacity || Object.values(parking.capacity).reduce((a, b) => a + b, 0);
+  const occupied = realOccupancy !== undefined ? realOccupancy : Math.floor(Math.random() * totalCapacity);
+  const occupancyPercentage = realOccupancyPercentage !== undefined ? Math.round(realOccupancyPercentage) : Math.round((occupied / totalCapacity) * 100);
 
   const availabilityColor =
     occupancyPercentage < 60 ? COLORS.success :
@@ -94,7 +106,7 @@ export function ParkingCard({ parking, onPress, onCheckIn, showDistance, distanc
           <View style={styles.permitBadges}>
             {parking.permits.map((permit) => (
               <View key={permit} style={styles.permitBadge}>
-                <Text style={styles.permitText}>{permit}</Text>
+                <Text style={styles.permitText}>{getPermitLabel(permit)}</Text>
               </View>
             ))}
           </View>
@@ -130,6 +142,16 @@ export function ParkingCard({ parking, onPress, onCheckIn, showDistance, distanc
       </Card>
     </TouchableOpacity>
   );
+}
+
+function getPermitLabel(permitCode: string): string {
+  const permitMap: { [key: string]: string } = {
+    'S': 'Commuter',
+    'R': 'Resident',
+    'E': 'Staff',
+    'V': 'Visitor',
+  };
+  return permitMap[permitCode] || permitCode;
 }
 
 function getFeatureIcon(feature: string): any {
@@ -252,23 +274,28 @@ const styles = StyleSheet.create({
   },
   permits: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: SPACING.sm,
   },
   permitsLabel: {
     fontSize: TYPOGRAPHY.fontSize.sm,
     color: COLORS.textSecondary,
     marginRight: SPACING.sm,
+    marginTop: 4,
   },
   permitBadges: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    flex: 1,
     gap: 6,
   },
   permitBadge: {
     backgroundColor: `${COLORS.primary}20`,
     paddingHorizontal: SPACING.sm,
-    paddingVertical: 4,
+    paddingVertical: 6,
     borderRadius: BORDER_RADIUS.xs,
+    minWidth: 70,
+    alignItems: 'center',
   },
   permitText: {
     fontSize: TYPOGRAPHY.fontSize.xs,

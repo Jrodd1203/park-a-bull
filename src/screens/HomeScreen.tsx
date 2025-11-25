@@ -280,18 +280,6 @@ export default function HomeScreen() {
             <Ionicons name='chevron-forward' size={20} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
-
-        {/* DEV TEST BUTTON - Remove before production! */}
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.devTestButton}
-            activeOpacity={OPACITY.pressed}
-            onPress={() => navigation.navigate('DevTest')}
-          >
-            <Ionicons name='flask' size={20} color='#FFFFFF' />
-            <Text style={styles.devTestButtonText}>Developer Tests</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -555,22 +543,5 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.fontSize.base,
     fontWeight: TYPOGRAPHY.fontWeight.semibold,
     color: '#000',
-  },
-  // Dev Test Button (REMOVE BEFORE PRODUCTION!)
-  devTestButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#8B5CF6',
-    paddingVertical: SPACING.base,
-    paddingHorizontal: SPACING.lg,
-    borderRadius: BORDER_RADIUS.button,
-    gap: SPACING.sm,
-    ...SHADOWS.medium,
-  },
-  devTestButtonText: {
-    fontSize: TYPOGRAPHY.fontSize.base,
-    fontWeight: TYPOGRAPHY.fontWeight.semibold,
-    color: '#FFFFFF',
   },
 });

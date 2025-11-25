@@ -16,6 +16,14 @@ export async function createCheckin(
   floor?: number,
   spotNumber?: string
 ): Promise<Checkin> {
+  console.log('[checkinService] createCheckin called with:', {
+    userId,
+    lotId,
+    permitType,
+    floor,
+    spotNumber,
+  });
+
   const checkinData: CheckinInsert = {
     user_id: userId,
     lot_id: lotId,
@@ -25,17 +33,27 @@ export async function createCheckin(
     status: 'active',
   };
 
+  console.log('[checkinService] Prepared checkin data:', checkinData);
+
   const { data, error } = await supabase
     .from('checkins')
     .insert(checkinData)
     .select()
     .single();
 
+  console.log('[checkinService] Supabase response:', { data, error });
+
   if (error) {
-    console.error('Error creating check-in:', error);
+    console.error('[checkinService] Error creating check-in:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+    });
     throw error;
   }
 
+  console.log('[checkinService] Check-in created successfully:', data);
   return data;
 }
 
